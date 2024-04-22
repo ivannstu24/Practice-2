@@ -1,230 +1,171 @@
-/*Реализовать ax mod p Сравнения по модулю простого числа через теорему Ферма и свойства сравнений. Программа должна проверять условия выполнения теоремы Ферма и простоту вводимого пользователем модуля.*/
-
-
 /*
-//задание 1.1
-#include <iostream>
-#include <cmath>
+ #include <iostream>
+ #include <vector>
+ #include <cmath>
 
-// проверка числа на простоту
-bool isPrime(int n) {
-   if (n <= 1) return false;
-   if (n <= 3) return true;
-   if (n % 2 == 0 || n % 3 == 0) return false;
-   for (int i = 5; i * i <= n; i += 6) {
-       if (n % i == 0 || n % (i + 2) == 0) return false;
-   }
-   return true;
-}
+ using namespace std;
 
+ // Функция для проверки простоты числа
+ bool isPrime(int n) {
+     if (n <= 1) return false;
+     if (n <= 3) return true;
+     if (n % 2 == 0 || n % 3 == 0) return false;
+     for (int i = 5; i * i <= n; i += 6) {
+         if (n % i == 0 || n % (i + 2) == 0)
+             return false;
+     }
+     return true;
+ }
 
+ // Функция для вычисления a^x mod p
+ int modPow(int base, int exponent, int module) {
+     // Проверка на случай отрицательного значения степени
+     if (exponent < 0)
+         return -1; // Признак ошибки
+     int result = 1;
+     base %= module; //  берем остаток от деления базы на модуль
+     while (exponent > 0) {
+         // Если степень нечетная, умножаем результат на базу по модулю
+         if (exponent % 2 == 1)
+             result = (result * base) % module;
+         // Берем квадрат базы и обновляем степень
+         base = (base * base) % module;
+         exponent /= 2;
+     }
+     return result;
+ }
 
-bool fermatTheorem(int a, int p) {
-   if (a == 0) return true; // 0^p ≡ 0 (mod p)
-   return (int)pow(a, p - 1) % p == 1;
-}
+ // Функция для вычисления a^x mod p через логарифмический метод
+ int modPowLog(int base, int exponent, int module) {
+     int t = log2(exponent); // Логарифм степени по основанию 2
+     vector<int> a;
+     int result = 1;
+     for (int i = 1; i <= pow(2, t); i *= 2) {
+         a.push_back(modPow(base, i, module)); // Ищем ряд а, заполняем вектор
+     }
+     // Преобразуем степень в двоичное представление
+     int exp2 = exponent;
+     vector<int> binaryExp;
+     while (exp2 > 0) {
+         binaryExp.push_back(exp2 % 2);
+         exp2 /= 2;
+     }
+     // Умножаем результаты a по соответствующим битам двоичного представления степени
+     for (int i = 0; i < a.size(); i++) {
+         if (binaryExp[i] == 1)
+             result = (result * a[i]) % module;
+     }
+     return result;
+ }
 
-int modPow(int base, int exponent, int modulus) {
-   int result = 1;
-   base = base % modulus;
-   while (exponent > 0) {
-       if (exponent % 2 == 1) {
-           result = (result * base) % modulus;
-           exponent--;
-       }
-       exponent = exponent / 2;
-       base = (base * base) % modulus;
-   }
-   return result;
-}
+ int main() {
+     int a, x, b, y, p;
 
-int modInverse(int a, int m) {
-   return modPow(a, m - 2, m);
-}
+     cout << "Введите число a: ";
+     cin >> a;
 
-bool modComparison(int a, int b, int m) {
-   return (a * modInverse(b, m)) % m == 1;
-}
+     cout << "Введите степень x: ";
+     cin >> x;
 
-int main() {
-   int p, a, b, exponent, exponent1;
-   std::cout << "Введите модуль: ";
-   std::cin >> p;
+     cout << "Введите число b: ";
+     cin >> b;
 
-    // проверяем является ли число модуля простым числом
-   if (!isPrime(p)) {
-       std::cout << "Введенное число не является простым." << std::endl;
-       return 0;
-   }
-    
-    
-   std::cout << "Введите первое число a: ";
-   std::cin >> a;
+     cout << "Введите степень y: ";
+     cin >> y;
 
-   if (!fermatTheorem(a, p)) {
-       std::cout << "Теорема Ферма не выполняется для числа a." << std::endl;
-       return 0;
-   }
+     cout << "Введите модуль p: ";
+     cin >> p;
 
-   std::cout << "Введите степень для a: ";
-   std::cin >> exponent;
+     // Проверка на простоту модуля p
+     if (!isPrime(p)) {
+         cout << "Модуль p должен быть простым числом." << endl;
+         return 1;
+     }
 
-   a = modPow(a, exponent, p);
+     // Проверка на теорему Ферма для a и p
+     if (modPow(a, p - 1, p) != 1) {
+         cout << "Теорема Ферма не выполняется для a и p." << endl;
+         return 1;
+     }
 
-   std::cout << "Введите второе число b: ";
-   std::cin >> b;
-   
-   if (!fermatTheorem(b, p)) {
-       std::cout << "Теорема Ферма не выполняется для числа b." << std::endl;
-       return 0;
-   }
-   
-   std::cout << "Введите степень для b: ";
-   std::cin >> exponent1;
-   
-   b = modPow(b, exponent1, p);
-   
-   if (modComparison(a, b, p)) {
-       std::cout << "Числа a и b равны по модулю p." << std::endl;
-   } else {
-       std::cout << "Числа a и b не равны по модулю p." << std::endl;
-   }
+     // Проверка на теорему Ферма для b и p
+     if (modPow(b, p - 1, p) != 1) {
+         cout << "Теорема Ферма не выполняется для b и p." << endl;
+         return 1;
+     }
 
-   return 0;
-}
+     // Вычисляем a^x mod p и b^y mod p
+     int result1 = modPowLog(a, x, p);
+     int result2 = modPowLog(b, y, p);
+
+     // Выводим результаты и сравниваем их по модулю p
+     cout << "Результат вычисления a^x mod p: " << result1 << endl;
+     cout << "Результат вычисления b^y mod p: " << result2 << endl;
+     if (result1 == result2)
+         cout << "Оба результата совпадают по модулю p." << endl;
+     else
+         cout << "Результаты по модулю p не совпадают." << endl;
+
+     return 0;
+ }
 */
 
+ 
 
-
-/*Реализовать алгоритм через разложение степени в двоичный вид (логарифм).*/
 
 /*
-//Задание 1.2
+
+//Задание 3
 #include <iostream>
 
-// Функция для вычисления a^b mod p
-long long power_mod(long long a, long long b, long long p) {
-    long long result = 1;
-    a = a % p; // Уменьшаем a до предела p
-
-    while (b > 0) {
-        // Если текущий бит в двоичном разложении степени b равен 1
-        if (b & 1) {
-            result = (result * a) % p;
-        }
-
-        // Умножаем a само на себя и уменьшаем b вдвое
-        b = b >> 1;
-        a = (a * a) % p;
-    }
-
-    return result;
-}
-
-// Функция для проверки теоремы Ферма
-bool fermatTheorem(int a, int p) {
-    if (a >= p) return false; // Теорема Ферма не применима, если a >= p
-    return power_mod(a, p - 1, p) == 1;
-}
-
-// Функция для проверки, является ли число простым
-bool is_prime(long long n) {
-    if (n <= 1) return false;
-    if (n <= 3) return true;
-    if (n % 2 == 0 || n % 3 == 0) return false;
-    for (long long i = 5; i * i <= n; i += 6) {
-        if (n % i == 0 || n % (i + 2) == 0) return false;
-    }
-    return true;
-}
-
-int main() {
-    long long a, x, p;
-    std::cout << "Введи a, x, и p: ";
-    std::cin >> a >> x >> p;
-
-    // Вычисляем a^x mod p
-    long long result = power_mod(a, x, p);
-    std::cout << "Результат: " << result << std::endl;
-
-    // Проверяем, является ли p простым числом и выполняется ли теорема Ферма
-    if (is_prime(p)) {
-        std::cout << "p является простым числом" << std::endl;
-    }
-
-    // Проверяем теорему Ферма
-    if (fermatTheorem(a, p)) {
-        std::cout << "Теорема Ферма выполняется" << std::endl;
-    } else {
-        std::cout << "Теорема Ферма не выполняется" << std::endl;
-    }
-
-    return 0;
-}
-
-
-
-
-*/
-
-
-/*Реализовать обобщенный алгоритм Евклида для вычисления с*d mod m=1.*/
-
-/*
-//Задание 2 (Обобщенный алгоритм Евклида)
-
-#include <iostream>
-
-// Функция для расчета наибольшего общего делителя и коэффициентов Безу
-int extendedGCD(int a, int b, int& x, int& y) {
+// Функция, вычисляющая НОД(a, b) и одновременно находящая коэффициенты x и y
+int extendedEuclidean(int a, int b, int &x_coefficient, int &y_coefficient) {
     if (b == 0) {
-        x = 1;
-        y = 0;
+        x_coefficient = 1;
+        y_coefficient = 0;
         return a;
     }
-    int x1, y1;
-    int gcd = extendedGCD(b, a % b, x1, y1);
-    x = y1;
-    y = x1 - (a / b) * y1;
+
+    int previous_x_coefficient, previous_y_coefficient;
+    int gcd = extendedEuclidean(b, a % b, previous_x_coefficient, previous_y_coefficient);
+
+    x_coefficient = previous_y_coefficient;
+    y_coefficient = previous_x_coefficient - (a / b) * previous_y_coefficient;
+
     return gcd;
 }
 
-// Функция для нахождения модульного обратного
-int modInverse(int c, int m) {
-    int x, y;
-    int gcd = extendedGCD(c, m, x, y);
+// Функция для нахождения обратного элемента по модулю
+int modInverse(int number, int modulo) {
+    int x_coefficient, y_coefficient;
+    int gcd = extendedEuclidean(number, modulo, x_coefficient, y_coefficient);
+
     if (gcd != 1) {
-        std::cerr << "Обратный элемент не существует." << std::endl;
-        return 0;
+        std::cout << "inverse element does not exist!\n";
+        return -1;
     } else {
-        // Нормализация x чтобы получить положительный результат
-        return (x % m + m) % m;
+        return (x_coefficient % modulo + modulo) % modulo;
     }
 }
 
 int main() {
-    int c, m;
-    std::cout << "Введите c: ";
-    std::cin >> c;
-    std::cout << "Введите m: ";
-    std::cin >> m;
+    int number, modulo;
+    std::cout << "Enter number and modulus: ";
+    std::cin >> number >> modulo;
 
-    int inv = modInverse(c, m);
-    if (inv != 0) {
-        std::cout << "Мультипликативный обратный элемент " << c << " по модулю " << m << " равен: " << inv << std::endl;
-    }
+    int inverse = modInverse(number, modulo);
+    if (inverse != -1)
+        std::cout << "inverse element for " << number << " modulo " << modulo << " is: " << inverse << std::endl;
+
     return 0;
 }
+
 */
 
 
 
+//Вариант 3 // 4 задние
 
-/*Написать программу, использующую алгоритм шифрования данных
- для преобразования исходного текста*/
-
-/*
-// Задание 4 (Вариант 3: Эль-Гамаль)
 #include <iostream>
 #include <vector>
 #include <random>
@@ -278,7 +219,7 @@ pair<int, vector<int>> encrypt(const string& plain_text, const vector<int>& publ
     vector<int> c2;
 
     for (char ch : plain_text) {
-        int m = static_cast<int>(ch); // ASCII
+        int m = static_cast<int>(ch); // не ASCII а UNICOD utf-8
         int c2_val = (m * mod_pow(y, k, p)) % p;
         c2.push_back(c2_val);
     }
@@ -306,31 +247,33 @@ string decrypt(const pair<int, vector<int>>& ciphertext, const vector<int>& priv
 
 int main() {
     int prime_p = 2087; // Большее простое число для демонстрации
-    vector<int> keys = generate_keys(prime_p);
+    vector<int> alice_keys = generate_keys(prime_p);
+    vector<int> bob_keys = generate_keys(prime_p);
 
-    string message = "Hello World!";
-    cout << "Original Message: " << message << endl;
+    string alice_message = "Я к вам пишу — чего же боле? Что я могу еще сказать? Теперь, я знаю, в вашей воле Меня презреньем наказать. Но вы, к моей несчастной доле Хоть каплю жалости храня,Вы не оставите меня."; // Сообщение от Алисы к Бобу
+    cout << "Исходное сообщение Алисы: " << alice_message << endl;
 
-    auto encrypted_message = encrypt(message, keys);
-    cout << "Encrypted Message: ";
+    auto encrypted_message = encrypt(alice_message, bob_keys); // Алиса шифрует сообщение для Боба
+    cout << "Зашифрованное сообщение для Боба: ";
     for (int num : encrypted_message.second) {
         cout << num << " ";
     }
     cout << endl;
 
-    string decrypted_message = decrypt(encrypted_message, keys);
-    cout << "Decrypted Message: " << decrypted_message << endl;
+    string bob_decrypted_message = decrypt(encrypted_message, bob_keys); // Боб расшифровывает сообщение
+    cout << "Боб расшифровал сообщение: " << bob_decrypted_message << endl;
 
     return 0;
 }
 
-*/
+
+
 
 /*Найти последнюю цифру «трехэтажного числа».*/
-
-
 /*
-// Задание 5
+
+
+//Задание 5
 
 #include <iostream>
 #include <cmath>
@@ -349,10 +292,12 @@ int modExp(int base, int exp, int mod) {
 }
 
 int main() {
-    int a, b, c;
+    int a = 1;
+    int b = 1;
+    int c = 1;
+    
 
-    // Ввод значений a, b и c
-    std::cout << "Введите значения a, b, c: ";
+    std::cout << "enter values a, b, c: ";
     std::cin >> a >> b >> c;
 
     // Поскольку для нахождения последней цифры a^(b^c) достаточно найти b^c по модулю 4,
@@ -360,9 +305,9 @@ int main() {
     int exp_mod_4 = modExp(b, c, 4);
     int last_digit = modExp(a, exp_mod_4, 10);
 
-    std::cout << "Последняя цифра числа " << a << "^(" << b << "^" << c << ") равна " << last_digit << std::endl;
+    std::cout << "Last digit of the number " << a << "^(" << b << "^" << c << ") is " << last_digit << std::endl;
 
     return 0;
 }
-*/
 
+*/
